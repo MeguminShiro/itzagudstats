@@ -103,7 +103,7 @@
             const col = idx + 1;
             const sIM = g.prize.imageUrl.match(/steam\/apps\/(\d+)\//);
             const sID = sIM ? sIM[1] : null;
-            const link = sID ? `https://s.team/a/${steamId}` : "https://www.itzagud.net/slots";
+            const link = sID ? `https://s.team/a/${sID}` : "https://www.itzagud.net/slots";
             html += `
                 <div class="itz-label" style="grid-column:${col}; grid-row:1;">${label}</div>
                 <div style="grid-column:${col}; grid-row:2;">
