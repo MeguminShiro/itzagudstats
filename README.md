@@ -2,7 +2,7 @@
 
 A tool to handle infos on Itzagud.
 
-<img width="3185" height="2226" alt="image" src="https://github.com/user-attachments/assets/2afd2674-05c6-45c3-9f01-356a7bf66020" />
+<img width="622" height="1094" alt="image" src="https://github.com/user-attachments/assets/240b5fa6-aa96-49df-a107-e2405c793d7b" />
 
 ## ✨ Features
 - **Small widget** that shows on all Itzagud site your **current Points/Clams**.
