@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name        【月白】Itzagud Stats Test
+// @name        【月白】Itzagud Stats
 // @description A tool to handle infos on Itzagud.
 // @author      星空優月 & 💟 めぐ 🍫 みん (Megumin 💥) 💟
 // @iconURL     https://www.itzagud.net/apple-touch-icon.png
