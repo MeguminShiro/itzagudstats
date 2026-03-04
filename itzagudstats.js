@@ -1,12 +1,12 @@
 // ==UserScript==
-// @name        【月白】Itzagud Stats
+// @name        【月白】Itzagud Stats Test
 // @description A tool to handle infos on Itzagud.
 // @author      星空優月 & 💟 めぐ 🍫 みん (Megumin 💥) 💟
 // @iconURL     https://www.itzagud.net/apple-touch-icon.png
 // @match       *://www.itzagud.net/*
 // @grant       none
 // @run-at      document-start
-// @version     0.1
+// @version     0.2
 // ==/UserScript==
 
 (function () {
@@ -32,15 +32,21 @@
             .itz-prize-img {width: 100%;max-width: 100px;margin: 0 auto;aspect-ratio: 16/9;object-fit: cover;border-radius: 6px;box-shadow: 0 4px 8px rgba(0,0,0,0.3);}
             .itz-prize-name {display: block;font-size: 13px;font-weight: 700;color: var(--itz-luck);text-decoration: none;line-height: 1.2;margin: 6px 0;}
             .itz-prize-name:hover { opacity: 0.8; }
-            .itz-meta-val {font-size: 13px;font-weight: 700;padding: 2px 0;}`;
-        document.head.appendChild(style);};
+            .itz-meta-val {font-size: 13px;font-weight: 700;padding: 2px 0;}
+            .itz-progress-container {display:flex;flex-direction:column;gap:4px;}
+            .itz-progress-label {display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:#a1a1aa;}
+            .itz-progress-outer {height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden;border:1px solid rgba(255,255,255,0.05);}
+            .itz-progress-inner {height:100%;background:linear-gradient(to right,#6366f1,#4ade80);transition:width 0.3s ease;}`;
+        document.head.appendChild(style);
+    };
 
     function fC(endTime) {
         const diff = new Date(endTime).getTime() - Date.now();
         if (diff <= 0) return "Ended";
         const hrs = Math.floor(diff / 3600000);
         const mins = Math.floor((diff % 3600000) / 60000);
-        return `${hrs}h ${mins}m`;}
+        return `${hrs}h ${mins}m`;
+    }
 
     async function fUD() {
         try {
@@ -48,7 +54,8 @@
             const data = await res.json();
             if (data.user) return data.user;
         } catch (err) { console.warn("Failed to fetch user data:", err); }
-        return null;}
+        return null;
+    }
 
     async function fSG() {
         try {
@@ -56,16 +63,35 @@
             const data = await res.json();
             if (data.ok) return data.items || [];
         } catch (err) { console.warn("Failed to fetch slot giveaways:", err); }
-        return [];}
+        return [];
+    }
 
     async function fSE() {
         try {
             const res = await fetch("https://www.itzagud.net/slots/api/my-entries", { method: "GET", credentials: "include" });
             const data = await res.json();
             if (data.ok) {
-                return { oneHour: data.byKind.SLOTS_1H || 0, twentyFourHour: data.byKind.SLOTS_24H || 0 };}
+                return { oneHour: data.byKind.SLOTS_1H || 0, twentyFourHour: data.byKind.SLOTS_24H || 0 };
+            }
         } catch (err) { console.warn("Failed to fetch slot entries:", err); }
-        return { oneHour: 0, twentyFourHour: 0 };}
+        return { oneHour: 0, twentyFourHour: 0 };
+    }
+
+    async function fTasks() {
+        try {
+            const res = await fetch("https://www.itzagud.net/api/tasks", { method: "GET", credentials: "include" });
+            const data = await res.json();
+            return data.tasks || [];
+        } catch (err) { console.warn("Failed to fetch tasks:", err); }
+        return [];
+    }
+
+    function uPB(id, done, total) {
+        const bar = document.getElementById(id);
+        const counter = document.getElementById(id + "-counter");
+        if (bar) bar.style.width = total > 0 ? `${Math.min(100, (done / total) * 100)}%` : "0%";
+        if (counter) counter.textContent = `${done}/${total}`;
+    }
 
     async function uUS() {
         const user = await fUD();
@@ -87,7 +113,27 @@
                     <span class="itz-val-timer">⏰ ${wC}</span>
                 </div>
             </div>
-        `;}
+        `;
+    }
+
+    async function uTC() {
+        const tasks = await fTasks();
+        let sTot = 0, sDone = 0, wTot = 0, wDone = 0;
+        for (const t of tasks) {
+            if (t.type.startsWith("STEAM")) {
+                sTot++;
+                if (!t.isAvailable && t.availabilityReason === "MAX_COMPLETIONS_REACHED") sDone++;
+            } else {
+                wTot++;
+                if (!t.isAvailable && (t.availabilityReason === "COOLDOWN_ACTIVE" || t.availabilityReason === "MAX_COMPLETIONS_REACHED")) wDone++;
+            }
+        }
+        const tot = sTot + wTot, done = sDone + wDone;
+        uPB("itz-task-bar", done, tot);
+        const counter = document.getElementById("itz-task-bar-counter");
+        if (counter) counter.textContent = `📺 ${wDone}/${wTot} 🎮 ${sDone}/${sTot}`;
+    }
+
 
     async function uSGD() {
         const giveaways = await fSG();
@@ -115,32 +161,101 @@
                 <div class="itz-meta-val" style="grid-column:${col}; grid-row:4; color:#facc15;">⌛ ${fC(g.endsAt)}</div>
                 <div class="itz-meta-val" style="grid-column:${col}; grid-row:5; color:#93c5fd;">🎫 ${tickets.toLocaleString()}</div>
                 <div class="itz-meta-val" style="grid-column:${col}; grid-row:6; color:var(--itz-luck);">📊 ${wR}%</div>
-            `;});
+            `;
+        });
         html += `</div>`;
-        container.innerHTML = html;}
+        container.innerHTML = html;
+    }
+
+    function mkDrag(titleEl, widgetEl) {
+        let dragging = false, ox = 0, oy = 0;
+        titleEl.style.cursor = "grab";
+        titleEl.style.userSelect = "none";
+        titleEl.addEventListener("pointerdown", (e) => {
+            if (e.button !== undefined && e.button !== 0) return;
+            dragging = true;
+            const r = widgetEl.getBoundingClientRect();
+            ox = e.clientX - r.left;
+            oy = e.clientY - r.top;
+            titleEl.setPointerCapture(e.pointerId);
+            titleEl.style.cursor = "grabbing";
+            widgetEl.style.transition = "none";
+            widgetEl.style.transform = "none";
+            widgetEl.style.top = r.top + "px";
+            widgetEl.style.right = "auto";
+            widgetEl.style.left = r.left + "px";
+        });
+        titleEl.addEventListener("pointermove", (e) => {
+            if (!dragging) return;
+            const x = Math.max(0, Math.min(e.clientX - ox, window.innerWidth - widgetEl.offsetWidth));
+            const y = Math.max(0, Math.min(e.clientY - oy, window.innerHeight - widgetEl.offsetHeight));
+            widgetEl.style.left = x + "px";
+            widgetEl.style.top = y + "px";
+        });
+        titleEl.addEventListener("pointerup", () => {
+            dragging = false;
+            titleEl.style.cursor = "grab";
+            widgetEl.style.transition = "";
+        });
+    }
 
     function wg() {
         if (document.getElementById("itzagud-widget")) return;
         iS();
         const widget = document.createElement("div");
         widget.id = "itzagud-widget";
-        widget.innerHTML = `
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom:1px solid var(--itz-border); padding-bottom:10px;">
-                <img src="https://www.itzagud.net/favicon.ico" style="width:20px; height:20px;">
-                <span style="font-weight:700; font-size:16px; letter-spacing:0.5px; color:var(--itz-accent);">ITZAGUD STATS</span>
-            </div>
 
-            <div id="itz-user-stats" class="itz-section">
-                <div style="font-size: 13px; color: #a1a1aa; text-align: center;">Loading user data...</div>
-            </div>
-
-            <div id="itz-slot-giveaways" class="itz-section">
-                <div style="font-size: 13px; color: #a1a1aa; text-align: center;">Loading giveaways...</div>
-            </div>
+        const titleRow = document.createElement("div");
+        titleRow.style = "display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom:1px solid var(--itz-border); padding-bottom:10px;";
+        titleRow.innerHTML = `
+            <img src="https://www.itzagud.net/favicon.ico" style="width:20px; height:20px;">
+            <span style="font-weight:700; font-size:16px; letter-spacing:0.5px; color:var(--itz-accent);">ITZAGUD STATS</span>
         `;
-        document.body.appendChild(widget);}
+        mkDrag(titleRow, widget);
+        widget.appendChild(titleRow);
 
-    function bt() {wg();uUS();uSGD();setInterval(uUS, 30 * 1000);setInterval(uSGD, 60 * 1000);}
+        const mkPB = (id, label) => {
+            const wrap = document.createElement("div");
+            wrap.className = "itz-progress-container";
+            wrap.innerHTML = `
+                <div class="itz-progress-label">
+                    <span>${label}</span>
+                    <span id="${id}-counter">0/0</span>
+                </div>
+                <div class="itz-progress-outer">
+                    <div id="${id}" class="itz-progress-inner" style="width:0%"></div>
+                </div>`;
+            return wrap;
+        };
 
-    if (document.readyState === "complete" || document.readyState === "interactive") {bt();} else {window.addEventListener("DOMContentLoaded", bt);window.addEventListener("load", bt);}
+        const userStatsDiv = document.createElement("div");
+        userStatsDiv.id = "itz-user-stats";
+        userStatsDiv.className = "itz-section";
+        userStatsDiv.innerHTML = `<div style="font-size:13px;color:#a1a1aa;text-align:center;">Loading user data...</div>`;
+
+        const taskSection = document.createElement("div");
+        taskSection.className = "itz-section";
+        taskSection.appendChild(mkPB("itz-task-bar", "Tasks Status"));
+
+
+        const slotGiveawaysDiv = document.createElement("div");
+        slotGiveawaysDiv.id = "itz-slot-giveaways";
+        slotGiveawaysDiv.className = "itz-section";
+        slotGiveawaysDiv.innerHTML = `<div style="font-size:13px;color:#a1a1aa;text-align:center;">Loading giveaways...</div>`;
+
+        widget.appendChild(userStatsDiv);
+        widget.appendChild(taskSection);
+        widget.appendChild(slotGiveawaysDiv);
+        document.body.appendChild(widget);
+    }
+
+    function bt() {
+        wg();
+        uUS(); uTC(); uSGD();
+        setInterval(uUS, 30 * 1000);
+        setInterval(uTC, 5 * 60 * 1000);
+        setInterval(uSGD, 60 * 1000);
+    }
+
+    if (document.readyState === "complete" || document.readyState === "interactive") { bt(); } else { window.addEventListener("DOMContentLoaded", bt); window.addEventListener("load", bt); }
 })();
