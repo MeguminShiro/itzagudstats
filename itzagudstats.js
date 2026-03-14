@@ -36,7 +36,8 @@
             .itz-progress-container {display:flex;flex-direction:column;gap:4px;}
             .itz-progress-label {display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:#a1a1aa;}
             .itz-progress-outer {height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden;border:1px solid rgba(255,255,255,0.05);}
-            .itz-progress-inner {height:100%;background:linear-gradient(to right,#6366f1,#4ade80);transition:width 0.3s ease;}`;
+            .itz-progress-inner {height:100%;background:linear-gradient(to right,#6366f1,#4ade80);transition:width 0.3s ease;}
+        `;
         document.head.appendChild(style);
     };
 
@@ -134,7 +135,6 @@
         if (counter) counter.textContent = `📺 ${wDone}/${wTot} 🎮 ${sDone}/${sTot}`;
     }
 
-
     async function uSGD() {
         const giveaways = await fSG();
         const entries = await fSE();
@@ -160,7 +160,8 @@
                 </div>
                 <div class="itz-meta-val" style="grid-column:${col}; grid-row:4; color:#facc15;">⌛ ${fC(g.endsAt)}</div>
                 <div class="itz-meta-val" style="grid-column:${col}; grid-row:5; color:#93c5fd;">🎫 ${tickets.toLocaleString()}</div>
-                <div class="itz-meta-val" style="grid-column:${col}; grid-row:6; color:var(--itz-luck);">📊 ${wR}%</div>
+                <div class="itz-meta-val" style="grid-column:${col}; grid-row:6; color:var(--itz-accent);">👥 ${totalEntries.toLocaleString()}</div>
+                <div class="itz-meta-val" style="grid-column:${col}; grid-row:7; color:var(--itz-luck);">📊 ${wR}%</div>
             `;
         });
         html += `</div>`;
@@ -171,6 +172,21 @@
         let dragging = false, ox = 0, oy = 0;
         titleEl.style.cursor = "grab";
         titleEl.style.userSelect = "none";
+        try {
+            const saved = localStorage.getItem('itz_widget_pos');
+            if (saved) {
+                const pos = JSON.parse(saved);
+                const w = 280;
+                let x = Math.max(0, Math.min(pos.x, window.innerWidth - w));
+                let y = Math.max(0, Math.min(pos.y, window.innerHeight - 50));
+                widgetEl.style.transition = "none";
+                widgetEl.style.transform = "none";
+                widgetEl.style.left = x + "px";
+                widgetEl.style.top = y + "px";
+                widgetEl.style.right = "auto";
+            }
+        } catch (e) {}
+
         titleEl.addEventListener("pointerdown", (e) => {
             if (e.button !== undefined && e.button !== 0) return;
             dragging = true;
@@ -196,6 +212,10 @@
             dragging = false;
             titleEl.style.cursor = "grab";
             widgetEl.style.transition = "";
+            const r = widgetEl.getBoundingClientRect();
+            try {
+                localStorage.setItem('itz_widget_pos', JSON.stringify({x: r.left, y: r.top}));
+            } catch(e){}
         });
     }
 
