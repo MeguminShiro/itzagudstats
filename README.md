@@ -2,7 +2,7 @@
 
 A tool to handle infos on Itzagud.
 
-<img width="419" height="1005" alt="image" src="https://github.com/user-attachments/assets/188205d7-e91d-4412-b442-95383421e8fd" />
+<img width="389" height="971" alt="image" src="https://github.com/user-attachments/assets/2007e181-d658-464b-9c1b-601386420550" />
 
 ## ✨ Features
 - **Small widget** that shows on all Itzagud site your **current Points/Clams**.
@@ -12,4 +12,4 @@ A tool to handle infos on Itzagud.
 ⠀
 ## 📋 How to use it?
 - Download and install Tampermonkey/Violetmonkey/Greasemonkey.
-- Open **itzagudstats.js** and it'll automatically **asks you to install on your previously chosen monkey**.
+- Open **itzagudstats.user.js** and it'll automatically **asks you to install on your previously chosen monkey**.
