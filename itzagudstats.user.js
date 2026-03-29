@@ -4,21 +4,32 @@
 // @author      星空優月 & 💟 めぐ 🍫 みん (Megumin 💥) 💟
 // @iconURL     https://www.itzagud.net/apple-touch-icon.png
 // @match       *://www.itzagud.net/*
+// @updateURL   https://raw.githubusercontent.com/MeguminShiro/itzagudstats/main/itzagudstats.user.js
+// @downloadURL https://raw.githubusercontent.com/MeguminShiro/itzagudstats/main/itzagudstats.user.js
 // @grant       none
 // @run-at      document-start
-// @version     0.3
+// @version     0.4
 // ==/UserScript==
 
 (function () {
     'use strict';
-
+    const SCRIPT_UPDATE_URL = "https://raw.githubusercontent.com/MeguminShiro/itzagudstats/main/itzagudstats.user.js";
     const cK = 'itz_ch_dat';
     function rC() {
         if (!document.body) return null;
         let n = null;
         let c = false;
+        let amt = 0;
         const txt = document.body.innerText || '';
-        if (/claimed|owned|\+250 clams claimed|You already claimed/i.test(txt)) {c = true;}
+        const amM = txt.match(/\+\s*([\d,]+)\s+clams\s+claimed/i);
+        if (amM) {
+            c = true;
+            amt = parseInt(amM[1].replace(/,/g, ''), 10);
+        } 
+        else if (/claimed|owned|you already claimed/i.test(txt)) {
+            c = true;
+        }
+
         const m = txt.match(/resets?\s+in\s+(\d{1,2}):(\d{2}):(\d{2})/i);
         if (m) {
             const ms = (parseInt(m[1],10)*3600 + parseInt(m[2],10)*60 + parseInt(m[3],10)) * 1000;
@@ -38,23 +49,27 @@
                             if (ms > 0 && ms <= 21600000) { n = Date.now() + ms; break; }}
                         p = p.parentElement;}}
                 if (n) break;}}
-        return { n, c };}
+        return { n, c, amt };}
 
     function gCS() {
+        let oldDat = null;
+        try { const r = localStorage.getItem(cK); if (r) oldDat = JSON.parse(r); } catch(e){}
+
         if (location.pathname.startsWith('/chat') && document.body) {
             const live = rC();
             if (live.n) {
+                if (live.c && !live.amt && oldDat && oldDat.amt) live.amt = oldDat.amt;
                 try { localStorage.setItem(cK, JSON.stringify(live)); } catch(e){}
-                return live;}}
-        try {
-            const raw = localStorage.getItem(cK);
-            if (raw) {
-                const dat = JSON.parse(raw);
-                if (Date.now() >= dat.n) {
-                    return { n: null, c: false };}
-                return dat;}
-        } catch(e){}
-        return { n: null, c: false };}
+                return live;
+            }
+        }
+                
+        if (oldDat) {
+            if (Date.now() >= oldDat.n) return { n: null, c: false, amt: 0 };
+            return oldDat;
+        }
+        return { n: null, c: false, amt: 0 };
+    }
 
     let _lDR = 0;
     function wCP() {
@@ -64,7 +79,14 @@
             _lDR = Date.now();
             const l = rC();
             if (l.n !== null) {
-                try { localStorage.setItem(cK, JSON.stringify(l)); } catch(e){}
+                try { 
+                    const oldRaw = localStorage.getItem(cK);
+                    if (oldRaw) {
+                        const oldDat = JSON.parse(oldRaw);
+                        if (l.c && !l.amt && oldDat.amt) l.amt = oldDat.amt;
+                    }
+                    localStorage.setItem(cK, JSON.stringify(l)); 
+                } catch(e){}
                 uCS();}};
         const at = () => { tR(); new MutationObserver(tR).observe(document.body, { childList: true, subtree: true, characterData: true }); };
         if (document.body) at(); else { document.addEventListener('DOMContentLoaded', at); setTimeout(at, 500); }}
@@ -77,8 +99,9 @@
         const dat = gCS();
 
         cdiv.onclick = () => window.open('https://www.itzagud.net/chat', '_blank');
+        
         if (dat.c) {
-            st.textContent = "✅ CLAIMED! (+250)";
+            st.textContent = dat.amt ? `✅ CLAIMED! (+${dat.amt})` : "✅ CLAIMED!";
             st.style.color = "#4ade80";
             pb.style.background = "linear-gradient(to right, #4ade80, #22c55e)";
         } else {
@@ -186,7 +209,7 @@
         style.textContent=`
             @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap');
             :root{--itz-bg: rgba(9, 9, 11, 0.85);--itz-border: rgba(63, 63, 70, 0.4);--itz-glass: blur(12px);--itz-accent: #a78bfa;--itz-points: #fbbf24;--itz-clams: #ef4444;--itz-luck: #22c55e;--itz-timer: #38bdf8;--itz-font: 'Rajdhani', sans-serif;}
-            #itzagud-widget{position: fixed;top: 50%;right: 20px;transform: translateY(-50%);z-index: 10000;width: 280px;font-family: var(--itz-font);background: var(--itz-bg);backdrop-filter: var(--itz-glass);-webkit-backdrop-filter: var(--itz-glass);border: 1px solid var(--itz-border);border-radius: 16px;padding: 16px;box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(167, 139, 250, 0.1);color: #f4f4f5;transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);}
+            #itzagud-widget{position: fixed;top: 50%;right: 20px;transform: translateY(-50%);z-index: 10000;width: 280px;font-family: var(--itz-font);background: var(--itz-bg);backdrop-filter: var(--itz-glass);border: 1px solid var(--itz-border);border-radius: 16px;padding: 16px;box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(167, 139, 250, 0.1);color: #f4f4f5;transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);}
             #itzagud-widget.itz-minimized {width: 52px;height: 52px;border-radius: 50%;padding: 0;gap: 0;justify-content: center;align-items: center;cursor: pointer;box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 10px rgba(167, 139, 250, 0.3);transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex;}
             #itzagud-widget.itz-minimized:hover {box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6), 0 0 15px rgba(167, 139, 250, 0.5);}
             #itzagud-widget.itz-minimized > *:not(#itz-minimized-content) {display: none !important;}
@@ -212,6 +235,10 @@
             .itz-progress-label{display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:#a1a1aa;}
             .itz-progress-outer{height:8px;background:rgba(255,255,255,0.05);border-radius:4px;overflow:hidden;border:1px solid rgba(255,255,255,0.05);}
             .itz-progress-inner{height:100%;background:linear-gradient(to right,#6366f1,#4ade80);transition:width 0.3s ease;}
+            
+            /* Update Button Styles */
+            .itz-update-btn {font-family:var(--itz-font); font-size:13px; font-weight:700; color:var(--itz-timer); text-decoration:none; padding:2px 8px; border:1px solid rgba(56, 189, 248, 0.3); border-radius:6px; background:rgba(56, 189, 248, 0.1); transition:all 0.2s; white-space:nowrap;}
+            .itz-update-btn:hover {background:rgba(56, 189, 248, 0.2); border-color:var(--itz-timer);}
         `;
         document.head.appendChild(style);};
 
@@ -226,14 +253,29 @@
         minContent.id = "itz-minimized-content";
         minContent.innerHTML = '<img src="https://www.itzagud.net/apple-touch-icon.png" style="width:32px; height:32px; border-radius:50%; pointer-events:none;">';
         widget.appendChild(minContent);
+        
         const titleRow = document.createElement("div");
-        titleRow.style = "display:flex; align-items:center; gap:8px; margin-bottom:16px; border-bottom:1px solid var(--itz-border); padding-bottom:10px; cursor:pointer; user-select:none; transition:opacity 0.2s;";
-        titleRow.onmouseover = () => { titleRow.style.opacity = "0.8"; };
-        titleRow.onmouseout  = () => { titleRow.style.opacity = "1"; };
-        titleRow.innerHTML = `
+        titleRow.style = "display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; border-bottom:1px solid var(--itz-border); padding-bottom:10px; user-select:none;";
+        
+        const titleClickableArea = document.createElement("div");
+        titleClickableArea.style = "display:flex; align-items:center; gap:8px; cursor:pointer; transition:opacity 0.2s; flex-grow:1;";
+        titleClickableArea.onmouseover = () => { titleClickableArea.style.opacity = "0.8"; };
+        titleClickableArea.onmouseout  = () => { titleClickableArea.style.opacity = "1"; };
+        titleClickableArea.innerHTML = `
             <img src="https://www.itzagud.net/apple-touch-icon.png" style="width:20px; height:20px; border-radius:50%; pointer-events:none;">
             <span style="font-weight:700; font-size:16px; letter-spacing:0.5px; color:var(--itz-accent); pointer-events:none;">ITZAGUD STATS</span>
         `;
+        
+        const updateBtn = document.createElement("a");
+        updateBtn.className = "itz-update-btn";
+        updateBtn.href = SCRIPT_UPDATE_URL;
+        updateBtn.target = "_blank";
+        updateBtn.textContent = "↻ Update";
+        updateBtn.addEventListener("click", (e) => e.stopPropagation());
+        updateBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
+
+        titleRow.appendChild(titleClickableArea);
+        titleRow.appendChild(updateBtn);
         widget.appendChild(titleRow);
 
         let isDraggingOrMoved = false;
@@ -254,7 +296,7 @@
                     widget.style.left = safeX + "px";
                     localStorage.setItem('itz_widget_pos', JSON.stringify({x: safeX, y: currentY}));}}}, true);
 
-        titleRow.addEventListener("click", (e) => {
+        titleClickableArea.addEventListener("click", (e) => {
             if (!isDraggingOrMoved && !widget.classList.contains('itz-minimized')) {
                 widget.classList.add('itz-minimized');
                 localStorage.setItem('itz_widget_minimized', 'true');}});
@@ -282,7 +324,7 @@
                 startX = e.clientX;
                 startY = e.clientY;
 
-                const target = widget.classList.contains("itz-minimized") ? widget : titleRow;
+                const target = widget.classList.contains("itz-minimized") ? widget : titleClickableArea;
                 target.setPointerCapture(e.pointerId);
                 target.style.cursor = "grabbing";
 
@@ -309,7 +351,7 @@
             const onUp = (e) => {
                 if (!dragging) return;
                 dragging = false;
-                const target = widget.classList.contains("itz-minimized") ? widget : titleRow;
+                const target = widget.classList.contains("itz-minimized") ? widget : titleClickableArea;
                 try {
                     target.releasePointerCapture(e.pointerId);
                 } catch(err) {}
@@ -321,9 +363,9 @@
                 } catch(e){}
                 setTimeout(() => { isDraggingOrMoved = false; }, 50);};
 
-            titleRow.addEventListener("pointerdown", onDown);
-            titleRow.addEventListener("pointermove", onMove);
-            titleRow.addEventListener("pointerup", onUp);
+            titleClickableArea.addEventListener("pointerdown", onDown);
+            titleClickableArea.addEventListener("pointermove", onMove);
+            titleClickableArea.addEventListener("pointerup", onUp);
 
             widget.addEventListener("pointerdown", (e) => { if (widget.classList.contains("itz-minimized")) onDown(e); });
             widget.addEventListener("pointermove", (e) => { if (widget.classList.contains("itz-minimized")) onMove(e); });
